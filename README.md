@@ -37,7 +37,7 @@ I specialize in one thing: helping small projects complete secure, fast, and rel
 - Includes PoC + ready-to-use fix code
 - 👉 [View Report](reviews/)
 
-### 2. UniswapV2-style AMM Audit
+### 2. UniswapV2/3-style AMM Audit
 - Key focus: Slippage, flashloan, price manipulation, liquidity risks
 - 👉 [View Report](reviews/)
 
