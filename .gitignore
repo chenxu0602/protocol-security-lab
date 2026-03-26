@@ -1,6 +1,7 @@
 
-cache
-lib
-out
+cache/
+lib/
+out/
 
 .github
+
