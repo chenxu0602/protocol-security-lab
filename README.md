@@ -1,64 +1,64 @@
 # 🛡️ protocol-security-lab
-## DeFi 合约安全审计 | 量化策略安全 | 香港独立审计师
+## DeFi Smart Contract Security Audit | Quantitative Strategy Specialist | Hong Kong Based Independent Auditor
 
-> 专注：小型 DeFi / AMM / 流动性池 / 质押 / 量化策略合约  
-> 优势：代码安全 + 金融逻辑双重审计 | 72小时快速报告 | 香港时区
-
----
-
-## 🎯 我的定位（客户一眼记住你）
-**10+ 年开发 | 量化/CTA/期权背景 | 精通 Uniswap 机制 | Python/Rust/C++ 全栈**
-只做一件事：帮小项目**低成本、快速、靠谱**完成合约安全审计。
+> Focus: Small to Mid-sized DeFi / AMM / Liquidity Pools / Staking / Quantitative Strategy Contracts
+> Strengths: Code Security + Financial Logic Dual Audit | 72-hour Fast Report | Hong Kong Timezone
 
 ---
 
-## 🚀 核心服务
-- ✅ Token 合约安全体检（Meme/分红/税费）
-- ✅ AMM/流动性池/兑换合约审计
-- ✅ 质押/分红/收益聚合合约审计
-- ✅ 量化策略合约安全审查
-- ✅ 漏洞修复 + 报告 + 上链前最终检查
-- ✅ 长期项目安全顾问
+## 🎯 Profile
+**10+ years development experience | Quant/CTA/Option strategy background | Deep expertise in Uniswap mechanics | Proficient in Python/Rust/C++**
+I specialize in one thing: helping small projects complete secure, fast, and reliable smart contract audits at a low cost.
 
 ---
 
-## 📁 仓库结构（清晰展示专业度）
-- `evm-playground`：EVM 合约练习、PoC 验证环境
-- `reviews`：审计案例、实战合约审查记录
-- `templates`：审计报告标准模板
-- `notes`：安全笔记、漏洞知识库
+## 🚀 Core Services
+- ✅ Token contract security review (Meme, tax, redistribution)
+- ✅ AMM / swap / liquidity pool audit
+- ✅ Staking, yield farming & reward distribution audit
+- ✅ Quantitative strategy contract security verification
+- ✅ Vulnerability fixing + detailed report + pre-launch final check
+- ✅ Long-term project security advisor
 
 ---
 
-## 📊 审计作品集（逐步更新）
-### 1. Mini DeFi 协议审计
-- 风险：Medium / High / Critical
-- 漏洞：3 个
-- 含 PoC + 可直接使用修复代码
-- 👉 [查看报告](reviews/)
-
-### 2. UniswapV2 类 AMM 审计
-- 重点：滑点、闪电贷、价格操控、流动性风险
-- 👉 [查看报告](reviews/)
-
-### 3. 质押 & 分红合约审计
-- 重点：权限控制、增发漏洞、Rug 风险
-- 👉 [查看报告](reviews/)
+## 📁 Repository Structure
+- `evm-playground`: EVM contract practice & PoC verification
+- `reviews`: Real audit cases & contract review records
+- `templates`: Standard professional audit report templates
+- `notes`: Security research & vulnerability knowledge base
 
 ---
 
-## 🛠️ 审计工具
+## 📊 Audit Portfolio (Updating)
+### 1. Mini DeFi Protocol Audit
+- Risk rating: Medium / High / Critical
+- Vulnerabilities found: 3
+- Includes PoC + ready-to-use fix code
+- 👉 [View Report](reviews/)
+
+### 2. UniswapV2-style AMM Audit
+- Key focus: Slippage, flashloan, price manipulation, liquidity risks
+- 👉 [View Report](reviews/)
+
+### 3. Staking & Reward Pool Audit
+- Key focus: Access control, minting risks, rug pull vectors
+- 👉 [View Report](reviews/)
+
+---
+
+## 🛠️ Tools & Frameworks
 - Foundry / Forge
-- Slither 静态分析
+- Slither static analysis
 - Etherscan / Tenderly
-- Python PoC 脚本
+- Python PoC scripting
 
 ---
 
-## 📩 接单联系（直接替换成你自己）
-- Telegram: @Chen Xu
+## 📩 Contact for Hire
+- Telegram: @deepthroat_ct
 - Twitter/X: @deepthroat_ct
 - Email: chen.xu.wq@gmail.com
 - Location: Hong Kong
 
-💼 **专注小单 | 快速交付 | 透明可靠 | 香港本地审计师**
+💼 **Small orders welcome | Fast delivery | Transparent & reliable | Hong Kong based independent auditor**
