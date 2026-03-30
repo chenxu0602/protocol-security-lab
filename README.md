@@ -10,6 +10,8 @@
 **10+ years development experience | Quant/CTA/Option strategy background | Deep expertise in Uniswap mechanics | Proficient in Python/Rust/C++**
 I specialize in one thing: helping small projects complete secure, fast, and reliable smart contract audits at a low cost.
 
+I bridge quantitative finance, software engineering, and DeFi security.I specialize in auditing smart contracts for AMMs, derivatives, lending, and liquidation engines — focusing on mathematical soundness and economic risk.I operate as an independent security researcher, delivering concise, high-impact audit reports without the overhead of agencies.
+
 ---
 
 ## 🚀 Core Services
