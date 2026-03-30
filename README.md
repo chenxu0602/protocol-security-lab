@@ -17,6 +17,7 @@ I bridge quantitative finance, software engineering, and DeFi security.I special
 ## 🚀 Core Services
 - ✅ Token contract security review (Meme, tax, redistribution)
 - ✅ AMM / swap / liquidity pool audit
+- ✅ Options protocol audit (including projects such as Panoptic)
 - ✅ Staking, yield farming & reward distribution audit
 - ✅ Quantitative strategy contract security verification
 - ✅ Vulnerability fixing + detailed report + pre-launch final check
