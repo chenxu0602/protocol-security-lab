@@ -1,0 +1,2 @@
+## Rounding
+- The codebase appears sensitive to the OpenZeppelin version in use. In my local build environment, Math.Rounding.Up/Down did not compile and required adaptation to Ceil/Floor, suggesting a dependency-version mismatch rather than a protocol logic issue.
