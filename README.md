@@ -8,105 +8,106 @@ Independent smart contract security research focused on protocol risk, financial
 
 ## Overview
 
-This repository documents my ongoing work in DeFi security research, review practice, and audit methodology.
+This repository is my public workspace for DeFi security research, review practice, and audit-style writing.
 
 My background combines:
 - quantitative research and financial markets
 - software engineering
 - smart contract security
-- protocol-level reasoning around accounting, incentives, and edge cases
+- protocol-level reasoning about incentives, accounting, and edge cases
 
-The goal of this repository is to build a public body of work around reviewing financial smart contracts with an emphasis on:
-- protocol risk
-- financial correctness
-- accounting integrity
-- privileged-role and governance risk
-- upgrade and deployment risk
+The goal of this repository is to build a focused body of public work around reviewing financial smart contracts, especially where economic logic, accounting integrity, and privileged controls matter as much as implementation correctness.
 
 ---
 
-## Review Focus
+## Research Focus
 
-I am particularly interested in reviewing:
+I am particularly interested in:
 
 - **Vaults and accounting-heavy systems**  
   Share issuance, redemptions, fee accrual, reward distribution, unlock logic, and asset-flow consistency.
 
 - **AMMs and liquidity systems**  
-  Pricing logic, invariants, manipulation surfaces, liquidity risks, and edge-case state transitions.
+  Pricing logic, invariants, manipulation surfaces, liquidity risk, and state-transition edge cases.
 
 - **Options and derivatives protocols**  
-  Exercise flows, collateral logic, settlement paths, liquidation assumptions, and risk-sensitive contract design.
+  Collateral flows, settlement paths, liquidation assumptions, exercise mechanics, and risk-sensitive contract design.
 
 - **Staking and reward systems**  
-  Reward accounting, emissions logic, claim flows, privileged controls, and insolvency or griefing scenarios.
+  Reward accounting, emissions logic, reserve backing, claim flows, and privileged controls.
 
 - **Upgrade-sensitive protocols**  
-  Diff review, initialization risk, privilege changes, broken assumptions across versions, and deployment readiness.
+  Diff review, initialization risk, privilege changes, deployment readiness, and broken assumptions across versions.
 
 ---
 
-## Repository Structure
+## What This Repository Contains
 
-### `evm-playground`
+### `notes/`
+Public research notes, case studies, and review observations on protocol design, bug patterns, and security lessons.
+
+### `reviews/`
+Structured review writeups and longer-form audit-style documents.
+
+### `templates/`
+Reusable templates for threat models, findings, review memos, and audit-style deliverables.
+
+### `evm-playground/`
 Hands-on practice, proof-of-concept work, and security experiments in the EVM environment.
 
-### `reviews`
-Practice reviews, structured notes, and longer-form writeups on protocols or contract systems.
-
-### `templates`
-Reusable templates for threat models, findings, review notes, and audit-style deliverables.
-
-### `notes`
-Security research notes, protocol design observations, bug patterns, and lessons learned from review practice.
-
 ---
 
-## Methodology
+## Review Methodology
 
-My review process typically focuses on:
+My review process usually centers on five questions:
 
-1. **System understanding**  
-   Understanding the protocol’s intended behavior, trust assumptions, and core value flows.
+1. **What is the system trying to guarantee?**  
+   Understand intended behavior, trust assumptions, and core value flows.
 
-2. **Asset-flow and accounting review**  
-   Checking whether balances, shares, rewards, fees, and state transitions remain internally consistent.
+2. **Do accounting and state transitions remain internally consistent?**  
+   Check balances, shares, rewards, fees, redemptions, and edge-case transitions.
 
-3. **Privileged-role analysis**  
-   Identifying admin powers, governance risk, emergency controls, and upgrade authority.
+3. **What powers do privileged actors really have?**  
+   Analyze governance, admin controls, emergency actions, token recovery, and upgrade authority.
 
-4. **Adversarial walkthroughs**  
-   Exploring edge cases, abuse paths, griefing vectors, and broken assumptions under stress.
+4. **What breaks under adversarial or stressed conditions?**  
+   Explore abuse paths, griefing vectors, reserve depletion, blocked exits, and assumption failures.
 
-5. **Findings and remediation notes**  
-   Writing practical, concise, and implementation-aware review output.
-
----
-
-## Current Contents
-
-This repository is a working research lab rather than a finished audit portfolio.
-
-Over time, it will include:
-- public review notes
-- protocol case studies
-- sample findings
-- audit-style reports
-- methodology templates
-- invariant and accounting checklists
+5. **What is the practical consequence for users and protocol operators?**  
+   Translate findings into concrete risk, not just code-level observations.
 
 ---
 
 ## Selected Themes
 
-Some of the main themes I plan to build out here include:
-
-- ERC4626 and vault accounting risks
+This repository is especially focused on:
+- ERC4626 and vault accounting risk
 - reward distribution and staking failure modes
 - AMM invariant and manipulation risk
 - financial correctness in derivatives protocols
 - upgrade and diff review workflows
 - protocol risk assessment for complex DeFi systems
+
+---
+
+## Selected Notes
+
+- [Review Note: Reward Accounting Was Not the Main Risk](./notes/case-study-fixed-staking-rewards.md)  
+  A public review note on staking design, reserve backing, privileged controls, and why internally correct reward accounting does not automatically mean user reward safety.
+
+---
+
+## Current Status
+
+This repository is a working research lab rather than a polished commercial portfolio.
+
+It is intended to grow over time into a stronger public record of:
+- review notes
+- case studies
+- sample findings
+- audit-style reports
+- methodology templates
+- accounting and invariant checklists
 
 ---
 
@@ -122,4 +123,5 @@ Some of the main themes I plan to build out here include:
 ## Note
 
 This repository contains independent research, practice reviews, and evolving methodology.
-It should not be interpreted as a substitute for a full formal audit unless explicitly stated for a specific review.
+
+Unless explicitly stated otherwise, the materials here should be treated as public research notes rather than formal commercial audit reports.
