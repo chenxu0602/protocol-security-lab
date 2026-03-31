@@ -1,67 +1,125 @@
-# 🛡️ protocol-security-lab
-## DeFi Smart Contract Security Audit | Quantitative Strategy Specialist | Hong Kong Based Independent Auditor
+# C&C Ledger Integrity Lab
 
-> Focus: Small to Mid-sized DeFi / AMM / Liquidity Pools / Staking / Quantitative Strategy Contracts
-> Strengths: Code Security + Financial Logic Dual Audit | 72-hour Fast Report | Hong Kong Timezone
+Security research for financial smart contracts.
 
----
-
-## 🎯 Profile
-**10+ years development experience | Quant/CTA/Option strategy background | Deep expertise in Uniswap mechanics | Proficient in Python/Rust/C++**
-I specialize in one thing: helping small projects complete secure, fast, and reliable smart contract audits at a low cost.
-
-I bridge quantitative finance, software engineering, and DeFi security.I specialize in auditing smart contracts for AMMs, derivatives, lending, and liquidation engines — focusing on mathematical soundness and economic risk.I operate as an independent security researcher, delivering concise, high-impact audit reports without the overhead of agencies.
+Independent smart contract security research focused on protocol risk, financial correctness, and complex DeFi systems such as vaults, AMMs, options, staking, and upgrade-sensitive protocols.
 
 ---
 
-## 🚀 Core Services
-- ✅ Token contract security review (Meme, tax, redistribution)
-- ✅ AMM / swap / liquidity pool audit
-- ✅ Options protocol audit (including projects such as Panoptic)
-- ✅ Staking, yield farming & reward distribution audit
-- ✅ Quantitative strategy contract security verification
-- ✅ Vulnerability fixing + detailed report + pre-launch final check
-- ✅ Long-term project security advisor
+## Overview
+
+This repository documents my ongoing work in DeFi security research, review practice, and audit methodology.
+
+My background combines:
+- quantitative research and financial markets
+- software engineering
+- smart contract security
+- protocol-level reasoning around accounting, incentives, and edge cases
+
+The goal of this repository is to build a public body of work around reviewing financial smart contracts with an emphasis on:
+- protocol risk
+- financial correctness
+- accounting integrity
+- privileged-role and governance risk
+- upgrade and deployment risk
 
 ---
 
-## 📁 Repository Structure
-- `evm-playground`: EVM contract practice & PoC verification
-- `reviews`: Real audit cases & contract review records
-- `templates`: Standard professional audit report templates
-- `notes`: Security research & vulnerability knowledge base
+## Review Focus
+
+I am particularly interested in reviewing:
+
+- **Vaults and accounting-heavy systems**  
+  Share issuance, redemptions, fee accrual, reward distribution, unlock logic, and asset-flow consistency.
+
+- **AMMs and liquidity systems**  
+  Pricing logic, invariants, manipulation surfaces, liquidity risks, and edge-case state transitions.
+
+- **Options and derivatives protocols**  
+  Exercise flows, collateral logic, settlement paths, liquidation assumptions, and risk-sensitive contract design.
+
+- **Staking and reward systems**  
+  Reward accounting, emissions logic, claim flows, privileged controls, and insolvency or griefing scenarios.
+
+- **Upgrade-sensitive protocols**  
+  Diff review, initialization risk, privilege changes, broken assumptions across versions, and deployment readiness.
 
 ---
 
-## 📊 Audit Portfolio (Updating)
-### 1. Mini DeFi Protocol Audit
-- Risk rating: Medium / High / Critical
-- Vulnerabilities found: 3
-- Includes PoC + ready-to-use fix code
-- 👉 [View Report](reviews/)
+## Repository Structure
 
-### 2. UniswapV2/3-style AMM Audit
-- Key focus: Slippage, flashloan, price manipulation, liquidity risks
-- 👉 [View Report](reviews/)
+### `evm-playground`
+Hands-on practice, proof-of-concept work, and security experiments in the EVM environment.
 
-### 3. Staking & Reward Pool Audit
-- Key focus: Access control, minting risks, rug pull vectors
-- 👉 [View Report](reviews/)
+### `reviews`
+Practice reviews, structured notes, and longer-form writeups on protocols or contract systems.
 
----
+### `templates`
+Reusable templates for threat models, findings, review notes, and audit-style deliverables.
 
-## 🛠️ Tools & Frameworks
-- Foundry / Forge
-- Slither static analysis
-- Etherscan / Tenderly
-- Python PoC scripting
+### `notes`
+Security research notes, protocol design observations, bug patterns, and lessons learned from review practice.
 
 ---
 
-## 📩 Contact for Hire
-- Telegram: @deepthroat_ct
-- Twitter/X: @deepthroat_ct
+## Methodology
+
+My review process typically focuses on:
+
+1. **System understanding**  
+   Understanding the protocol’s intended behavior, trust assumptions, and core value flows.
+
+2. **Asset-flow and accounting review**  
+   Checking whether balances, shares, rewards, fees, and state transitions remain internally consistent.
+
+3. **Privileged-role analysis**  
+   Identifying admin powers, governance risk, emergency controls, and upgrade authority.
+
+4. **Adversarial walkthroughs**  
+   Exploring edge cases, abuse paths, griefing vectors, and broken assumptions under stress.
+
+5. **Findings and remediation notes**  
+   Writing practical, concise, and implementation-aware review output.
+
+---
+
+## Current Contents
+
+This repository is a working research lab rather than a finished audit portfolio.
+
+Over time, it will include:
+- public review notes
+- protocol case studies
+- sample findings
+- audit-style reports
+- methodology templates
+- invariant and accounting checklists
+
+---
+
+## Selected Themes
+
+Some of the main themes I plan to build out here include:
+
+- ERC4626 and vault accounting risks
+- reward distribution and staking failure modes
+- AMM invariant and manipulation risk
+- financial correctness in derivatives protocols
+- upgrade and diff review workflows
+- protocol risk assessment for complex DeFi systems
+
+---
+
+## Contact
+
+- GitHub: [chenxu0602](https://github.com/chenxu0602)
+- X: [@deepthroat_ct](https://x.com/deepthroat_ct)
 - Email: chen.xu.wq@gmail.com
 - Location: Hong Kong
 
-💼 **Small orders welcome | Fast delivery | Transparent & reliable | Hong Kong based independent auditor**
+---
+
+## Note
+
+This repository contains independent research, practice reviews, and evolving methodology.
+It should not be interpreted as a substitute for a full formal audit unless explicitly stated for a specific review.
