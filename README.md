@@ -92,7 +92,7 @@ This repository is especially focused on:
 
 ## Selected Notes
 
-- [Review Note: Reward Accounting Was Not the Main Risk](./notes/case-study-fixed-staking-rewards.md)  
+- [Review Note: Reward Accounting Was Not the Main Risk](./notes/fixed-staking-rewards-review-note.md)  
   A public review note on staking design, reserve backing, privileged controls, and why internally correct reward accounting does not automatically mean user reward safety.
 
 ---
