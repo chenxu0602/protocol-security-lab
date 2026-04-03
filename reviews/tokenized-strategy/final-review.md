@@ -22,6 +22,8 @@ This makes the protocol’s security story less about isolated arithmetic bugs a
 - `evm-playground/src/review/interfaces/ITokenizedStrategy.sol`
 - `evm-playground/src/review/interfaces/IStrategy.sol`
 - `evm-playground/test/review/YearnV3TokenizedStrategyReview.t.sol`
+- `evm-playground/test/review/YearnV3TokenizedStrategyInvariants.t.sol`
+- `evm-playground/test/review/YearnV3TokenizedStrategyFuzz.t.sol`
 
 ## Scope Boundaries
 This review focused on:
@@ -31,6 +33,7 @@ This review focused on:
 - entry and exit pricing against stored accounting
 - report-time profit, loss, fee, and unlock transitions
 - targeted scenario testing for stale valuation, optimistic valuation, unlock timing, and report cadence
+- lightweight invariant and fuzz testing for unlock monotonicity, stale-entry pricing, and optimistic fee minting
 
 This review did **not** attempt to provide:
 
@@ -44,19 +47,22 @@ The strongest conclusions in this document therefore apply to Yearn-like integra
 ## Review Approach
 The review combined:
 
-- manual reading of accounting flows and trust boundaries
+- manual reading of accounting flows and callback trust boundaries
 - analysis of entry and exit pricing against stored accounting
 - focused reasoning about `report()` as the profit/loss crystallization boundary
-- targeted review tests covering honest, stale, and optimistic valuation paths
+- targeted deterministic scenario tests covering honest, stale, and optimistic valuation paths
 - comparison of alternate report timing and report frequency on the same economic path
-- separation of expected locked-profit behavior from economically important review candidates
+- a lightweight invariant test for unlock monotonicity under repeated time advancement
+- fuzz comparisons for stale-vs-honest late-entry pricing and optimistic-vs-honest fee minting
+- separation of expected locked-profit behavior from economically important review themes
 
-The current custom review test file provides evidence for the following higher-level themes:
+The current test set provides evidence for the following higher-level conclusions:
 
 - honest reporting keeps the shared accounting layer coherent
 - stale reporting can improve entry terms for later depositors relative to fresher accounting
 - optimistic reporting can over-mint fee shares and worsen downstream outcomes
 - report timing and report frequency materially change allocation outcomes even on the same PnL path
+- unlocked-share progression appears time-monotone under the modeled invariant harness
 
 ## Main Attack Surfaces
 - `_harvestAndReport()` as the valuation oracle for `report()`
@@ -70,6 +76,7 @@ The current custom review test file provides evidence for the following higher-l
 - no-op honest reports should not change user claims
 - profit locking should smooth post-report profit realization in a coherent way
 - effective supply rather than raw supply should explain PPS evolution during unlock
+- unlocked shares should progress monotonically over time absent new report-side resets
 - stale accounting should be understood as an entry-pricing trust boundary
 - optimistic valuation should be understood as a fee-accounting and allocation trust boundary
 - report timing should be understood as a user-allocation input, not just a maintenance concern
@@ -77,11 +84,15 @@ The current custom review test file provides evidence for the following higher-l
 ## Main Review Conclusions
 
 ### A. Pre-report stale-price entry can shift previously accrued value toward later entrants
-Targeted testing showed that if real strategy value has increased but `_harvestAndReport()` has not yet reconciled that increase into stored accounting, a later depositor can still enter against the old accounting price.
+Targeted scenario testing showed that if real strategy value has increased but `_harvestAndReport()` has not yet reconciled that increase into stored accounting, a later depositor can still enter against the old accounting price.
 
 Compared with a fresher-report path, the stale path allows the later entrant to receive more favorable share issuance and to participate in gains that accrued before entry under updated accounting.
 
 Profit locking does not mitigate this specific scenario because the gain has not yet been crystallized by `report()`.
+
+This review theme is supported by both:
+- deterministic stale-vs-honest comparison tests
+- fuzzed stale-vs-honest comparisons showing that delayed reporting can systematically improve late-entry share issuance relative to a fresher-report baseline
 
 #### Why this matters
 Depositor fairness depends directly on reporting cadence and valuation freshness. The accounting layer may remain internally coherent while still producing materially different cross-user outcomes before `report()` catches up to economic reality.
@@ -92,13 +103,17 @@ Strong trust-boundary / accounting-freshness review theme. Not, by itself, evide
 ---
 
 ### B. Optimistic reporting can over-mint fee shares and leave users worse off after correction
-Targeted testing showed that when `_harvestAndReport()` overstates value:
+Targeted scenario testing showed that when `_harvestAndReport()` overstates value:
 
 - `report()` mints more fee shares than in the honest path
 - `report()` also creates more locked shares than in the honest path
 - after later correction, both the incumbent depositor and the later depositor can remain worse off than in the honest comparison path
 
 This is stronger than a transient entry-pricing distortion. It shows that report-time overvaluation can crystallize paper gains into real fee dilution.
+
+This review theme is supported by both:
+- deterministic optimistic-vs-honest comparison tests
+- fuzzed comparisons showing that overvaluation can systematically mint more fee shares than an honest-report baseline across varied parameter ranges
 
 #### Why this matters
 `_harvestAndReport()` is not merely an informational callback. It is the valuation oracle for profit realization, fee extraction, and future user allocation. If the strategy reports optimistic NAV rather than realizable NAV, the system can mint economically unjustified fee shares before the accounting is corrected.
@@ -133,6 +148,11 @@ Immediately after a profitable `report()`, but before any profit has unlocked, a
 ### 3. Mid-unlock entrants receive fewer shares than immediate post-report entrants
 As locked profit unlocks over time, effective supply changes and later entrants receive fewer shares for the same assets. This confirms that time-based unlock meaningfully affects pricing even when stored `totalAssets` is unchanged.
 
+### 4. Unlock progression appears monotone under the modeled invariant harness
+A lightweight handler-based invariant test that repeatedly advances time supports the expectation that unlocked shares progress monotonically over time under the modeled setup.
+
+This does **not** prove every economic outcome is monotone, but it does support the narrower claim that the unlock mechanism itself moves in the expected direction over time in the tested harness.
+
 ## Overall Assessment
 The shared `TokenizedStrategy` logic reviewed here appears internally coherent under honest reporting. The more important security story is that fairness and economic safety depend heavily on the honesty, freshness, and timing of strategy callbacks.
 
@@ -143,6 +163,7 @@ The main conclusions from this review are:
 - stale valuation can improve entry terms for later entrants relative to fresher accounting
 - optimistic valuation can crystallize paper gains into fee dilution
 - report cadence itself changes how value is distributed across users and fee recipients
+- unlock behavior appears mechanically coherent under the modeled invariant harness
 
 For Yearn-like systems, the most important review lens is therefore not just arithmetic correctness, but the relationship between:
 
@@ -161,3 +182,4 @@ The main unresolved directions from this review are:
 - add protocol-fee-enabled variants to separate protocol-fee dilution from strategist-fee dilution
 - add withdraw / redeem tests under `_freeFunds()` shortfall, since the exit-side trust boundary remains materially underexplored
 - add scenarios where later entrants arrive between multiple reports to better characterize cadence sensitivity
+- add broader invariant coverage for accounting coherence across report, deposit, and redemption sequencing
