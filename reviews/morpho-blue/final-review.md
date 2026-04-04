@@ -15,6 +15,7 @@ Accounting is stored at two layers:
 Supply and borrow positions are tracked in shares, while collateral is tracked in token amount. Interest is accrued lazily rather than continuously, and many core economic effects are only crystallized when `_accrueInterest()` is reached.
 
 ## In-Scope Files
+
 ### Core Contract
 - `evm-playground/src/review/Morpho.sol`
 
@@ -58,7 +59,7 @@ The current review test suite for Morpho Blue includes 21 targeted tests coverin
 
 ## Core Conclusions
 
-### 1. Morpho’s accounting is coherent under its intended model, but low-liquidity and fresh-market regimes are meaningfully different from mature markets
+### 1. Core accounting appears coherent, but fresh markets behave differently from mature markets
 At the level of recorded market accounting, the main supply / borrow / repay / withdraw / liquidation flows are internally coherent under Morpho’s intended token, oracle, and IRM assumptions.
 
 However, the review strongly suggests that fresh and tiny markets must be treated as their own risk regime. Virtual balances regularize some empty-market behavior, but they do not eliminate:
@@ -71,7 +72,7 @@ The practical review implication is that “works in mature markets” is not en
 
 ---
 
-### 2. Bad-debt realization timing is an economic allocation boundary
+### 2. Bad-debt realization timing is an allocation boundary
 Morpho only crystallizes residual bad debt when a borrower’s collateral reaches zero.
 
 That is not a minor implementation detail. It creates an economic sequencing boundary: partial liquidation can leave residual debt unsocialized for one more step, allowing suppliers to exit before the final loss is imposed on the remaining pool.
@@ -83,7 +84,7 @@ This is one of the strongest issue candidates because it affects who ultimately 
 
 ---
 
-### 3. Liquidation rounding and branch choice are real review surfaces
+### 3. Liquidation branch choice and rounding are material review surfaces
 Morpho liquidation is not a single path. The caller chooses between:
 - `seizedAssets`
 - `repaidShares`
@@ -100,7 +101,7 @@ The current tests give useful characterization coverage here, but liquidation ro
 
 ---
 
-### 4. Virtual balances regularize empty-market behavior but introduce their own tiny-market distortions
+### 4. Virtual balances both mitigate and distort
 Morpho’s virtual shares / virtual assets are best understood as a mitigation, not a complete defense.
 
 They can improve some empty-market conversion behavior, but they also act as economic participants in the math. In tiny markets, the review found meaningful reasons to track:
@@ -117,7 +118,7 @@ This means virtual balances are not only a guardrail; they are also part of the 
 
 ---
 
-### 5. Lazy accrual and IRM behavior are protocol-level integration assumptions, not just implementation details
+### 5. Lazy accrual is a protocol-level integration boundary
 `_accrueInterest()` is the central accounting crystallization path in Morpho Blue.
 
 It is where:
@@ -136,21 +137,23 @@ The main review implication is that stateful or cadence-sensitive IRMs need expl
 
 This is best treated as a major design/integration theme rather than a single isolated bug class.
 
-## Confirmed Strong Review Themes / Candidate Issues
+## Strong Review-Supported Candidate Issues
 
 ### 1. Delayed bad-debt socialization via `1 wei` collateral residue
 This is the strongest current candidate. The review harness directly shows that bad debt can be kept unrealized until the final unit of collateral is removed, creating a loss-allocation game across suppliers.
 
-### 2. Virtual supply-share interest leakage
+### 2. Virtual supply-share participation can leave part of tiny-market growth outside real LP claims
 In tiny markets, market-level supply growth can exceed the growth captured by real supplier claims even without a protocol fee, suggesting that virtual supply balances can absorb part of the economic benefit.
 
-### 3. Virtual borrow-share ghost debt and withdrawability loss
+### 3. Virtual borrow-share participation can leave tiny-market residual recorded debt that constrains withdrawal
 In tiny markets, market-level borrow assets can remain even after the real borrower clears all owned borrow shares, creating residual debt that can restrict supplier exit.
 
-### 4. Dust liquidation rounding behavior
+### 4. Dust liquidation rounding behavior remains a meaningful adversarial surface
 The current tests support the view that liquidation rounding and branch choice are meaningful economic surfaces, even where the review has not yet elevated every path into a finalized exploit claim.
 
 ## Review Limits / What Is Not Yet Fully Settled
+The current review is strongest on accounting characterization and selected liquidation / bad-debt paths; some historically reported fresh-market issues remain only partially reproduced in the local harness.
+
 - Candidate 5 in `issue-candidates.md` (first-borrower borrow-share inflation) is literature-backed but does not yet have a dedicated local reproduction test.
 - Candidate 6 (manipulated supplier entry pricing) is supported by characterization and external findings, but does not yet have a dedicated manipulated-entry proof in the local suite.
 - Candidate 7 (lazy accrual + stateful IRM path dependence) is currently best treated as a design/integration review theme rather than a near-term exploit claim on its own.
@@ -161,6 +164,7 @@ Morpho Blue’s core accounting model is coherent under its intended assumptions
 - liquidation is an economic sequencing and rounding surface, not just a cleanup mechanism
 - virtual balances both mitigate and create distortions
 - lazy accrual is a major integration boundary for IRMs, not a cosmetic optimization
+- safety depends materially on well-behaved tokens, correct oracle scaling and freshness, sane IRM behavior, and sensible enabled market parameters
 
 The highest-signal security story is therefore not “Morpho accounting is broken.” It is:
 
