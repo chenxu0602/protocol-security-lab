@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib", "../lib"]
+solc = "/Users/chenxu/.local/bin/solc-0.8.24"
+allow_paths = ["../equilibria/perennial-v2", "../equilibria/root"]
+
+remappings = [
+   "forge-std/=../lib/forge-std/src/",
+   "openzeppelin-contracts/=lib/openzeppelin-contracts-4/",
+   "@openzeppelin/contracts/=lib/openzeppelin-contracts-4/contracts/",
+   "@equilibria/root/=lib/root/contracts/",
+   "perennial-v2/=lib/perennial-v2/",
+]

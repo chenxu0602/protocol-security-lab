@@ -471,7 +471,7 @@ contract MorphoBlueReviewTest is Test {
         assertGt(borrowerAfterPartial.borrowShares, 0);
         assertEq(marketAfterPartial.totalSupplyAssets, 2_000 ether);
 
-        vm.prank(supplier);
+        vm.prank(supplier); // first supplier get the full 1000 ether
         morpho.withdraw(marketParams, 1_000 ether, 0, supplier, supplier);
 
         Market memory marketAfterExit = morpho.market(marketId);
