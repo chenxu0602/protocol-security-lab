@@ -10,3 +10,7 @@ remappings = [
 "@equilibria/root/=equilibria/root/contracts/",
 ]
 
+[invariant]
+runs = 64
+depth = 50
+fail_on_revert = false
