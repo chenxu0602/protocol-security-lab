@@ -1,0 +1,35 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib"]
+solc_version = "0.7.6"
+evm_version = "istanbul"
+optimizer = true
+optimizer_runs = 800
+allow_paths = [
+    "../uniswap/v3-core",
+    "../uniswap/v3-periphery"
+]
+
+remappings = [
+    "@uniswap/v3-core/=lib/uniswap-v3-core/",
+    "@uniswap/v3-periphery/=lib/uniswap-v3-periphery/"
+]
+
+[fmt]
+bracket_spacing = true
+tab_width = 4
+line_length = 100
+int_types = "preserve"
+quote_style = "single"
+wrap_comments = true
+
+[profile.ci]
+offline = true
+verbosity = 2
+
+
+[invariant]
+runs = 64
+depth = 50
+fail_on_revert = false
