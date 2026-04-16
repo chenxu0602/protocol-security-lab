@@ -1,0 +1,42 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib"]
+optimizer = true
+optimizer_runs = 1000000
+allow_paths = [
+    "../polymarket"
+]
+
+remappings = [
+    "polymarket/=lib/polymarket/",
+    "forge-std/=lib/forge-std/src/",
+    "@forge-std/=lib/forge-std/src/",
+    "openzeppelin/=lib/polymarket/ctf-exchange/lib/openzeppelin-contracts/contracts/",
+    "openzeppelin-contracts/=lib/polymarket/ctf-exchange/lib/openzeppelin-contracts/contracts/",
+    "solmate/=lib/polymarket/ctf-exchange/lib/solmate/src/",
+    "solady/=lib/polymarket/ctf-exchange/lib/solady/src/",
+    "@solady/=lib/polymarket/ctf-exchange-v2/lib/solady/",
+    "@ctf-exchange-v2/src/=lib/polymarket/ctf-exchange-v2/src/",
+    "common/=lib/polymarket/ctf-exchange/src/common/",
+    "creator/=lib/polymarket/ctf-exchange/src/creator/",
+    "dev/=lib/polymarket/ctf-exchange/src/dev/",
+    "exchange/=lib/polymarket/ctf-exchange/src/exchange/",
+    "lib/solmate/src/=lib/polymarket/ctf-exchange/lib/solmate/src/",
+    "lib/forge-std/src/=lib/forge-std/src/"
+]
+
+[fmt]
+bracket_spacing = true
+tab_width = 4
+line_length = 100
+int_types = "preserve"
+quote_style = "single"
+wrap_comments = true
+
+[profile.ci]
+offline = true
+verbosity = 2
+
+[fuzz]
+runs = 256
