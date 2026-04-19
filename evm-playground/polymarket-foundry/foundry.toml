@@ -4,18 +4,24 @@ test = "test"
 libs = ["lib"]
 optimizer = true
 optimizer_runs = 1000000
+via_ir = true
 allow_paths = [
     "../polymarket"
+]
+fs_permissions = [
+    { access = "read", path = "out" },
+    { access = "read", path = "lib/polymarket/ctf-exchange-v2/artifacts" },
+    { access = "read", path = "lib/polymarket/exchange-fee-module/artifacts" }
 ]
 
 remappings = [
     "polymarket/=lib/polymarket/",
     "forge-std/=lib/forge-std/src/",
-    "@forge-std/=lib/forge-std/src/",
+    "@forge-std/=lib/forge-std/",
     "openzeppelin/=lib/polymarket/ctf-exchange/lib/openzeppelin-contracts/contracts/",
     "openzeppelin-contracts/=lib/polymarket/ctf-exchange/lib/openzeppelin-contracts/contracts/",
     "solmate/=lib/polymarket/ctf-exchange/lib/solmate/src/",
-    "solady/=lib/polymarket/ctf-exchange/lib/solady/src/",
+    "solady/=lib/polymarket/ctf-exchange/lib/solady/",
     "@solady/=lib/polymarket/ctf-exchange-v2/lib/solady/",
     "@ctf-exchange-v2/src/=lib/polymarket/ctf-exchange-v2/src/",
     "common/=lib/polymarket/ctf-exchange/src/common/",
