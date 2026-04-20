@@ -1,0 +1,55 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib"]
+optimizer = true
+optimizer_runs = 200
+evm_version = "cancun"
+allow_paths = [
+    "../panoptic"
+]
+fs_permissions = [
+    { access = "read", path = "out" },
+    { access = "read-write", path = "cache" }
+]
+
+remappings = [
+    "panoptic-v2-core/=lib/panoptic-v2-core/",
+    "forge-std/=lib/forge-std/src/",
+    "@forge-std/=lib/forge-std/src/",
+    "@contracts/=lib/panoptic-v2-core/contracts/",
+    "@libraries/=lib/panoptic-v2-core/contracts/libraries/",
+    "@base/=lib/panoptic-v2-core/contracts/base/",
+    "@tokens/=lib/panoptic-v2-core/contracts/tokens/",
+    "@types/=lib/panoptic-v2-core/contracts/types/",
+    "@scripts/=lib/panoptic-v2-core/script/",
+    "@test_periphery/=lib/panoptic-v2-core/test/foundry/test_periphery/",
+    "@openzeppelin/=lib/panoptic-v2-core/lib/v4-core/lib/openzeppelin-contracts/",
+    "openzeppelin-contracts/=lib/panoptic-v2-core/lib/v4-core/lib/openzeppelin-contracts/",
+    "solmate/=lib/panoptic-v2-core/lib/solmate/",
+    "clones-with-immutable-args/=lib/panoptic-v2-core/lib/clones-with-immutable-args/src/",
+    "univ3-core/=lib/panoptic-v2-core/lib/v3-core/contracts/",
+    "v4-core/=lib/panoptic-v2-core/lib/v4-core/src/",
+    "@uniswap/=lib/panoptic-v2-core/lib/",
+    "lib/forge-std/src/=lib/forge-std/src/"
+]
+
+[fmt]
+bracket_spacing = true
+tab_width = 4
+line_length = 100
+int_types = "preserve"
+quote_style = "single"
+wrap_comments = true
+
+[profile.ci]
+offline = true
+verbosity = 2
+
+[fuzz]
+runs = 256
+
+[invariant]
+runs = 64
+depth = 50
+fail_on_revert = false
