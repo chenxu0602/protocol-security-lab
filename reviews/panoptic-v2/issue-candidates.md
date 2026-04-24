@@ -189,9 +189,43 @@
 
 ---
 
+### 11. Several historically reported RiskEngine / OraclePack edge cases are now best treated as mitigation regressions on current code
+- Status: `Confirmed intended behavior`
+- What was checked:
+  - `getLiquidationBonus` no longer underflows on a distribution-insolvent shape
+  - multi-leg credit accumulation in `_getRequiredCollateralAtTickSinglePosition()` now aggregates instead of overwriting
+  - `twapEMA` weights fast / slow / eons and ignores spot
+  - width-1 long at strike no longer divides by zero
+  - `rebaseOraclePack()` preserves EMAs and lock mode
+  - `safeMode > 0` forces 4-tick solvency checks on the symmetric blind-spot shape
+  - same-epoch `updateInterestRate()` no longer compounds `rateAtTarget`
+- Observation:
+  - These are exactly the kind of issues that previously made sense as vulnerability candidates, but on the current codebase they behave more like mitigation-confirmation regressions.
+- Why it matters:
+  - Review effort should not keep treating these as open bug suspicions in the current branch.
+  - They are still worth retaining as regression coverage because several were historically high-signal C4-style findings.
+- Related tests:
+  - `PanopticRiskEnginePoCs.t.sol`
+
+---
+
+### 12. Burn-based commission distribution remains economically JIT-sensitive when fees are burned to PLPs
+- Status: `Characterization risk`
+- Observation:
+  - `settleMint()` / `settleBurn()` with `feeRecipient == 0` burn commission shares from the option owner instead of transferring them to an explicit recipient.
+  - That lowers `totalSupply` without removing assets and therefore lifts share value for whoever is in the vault at that instant.
+  - A dominant entrant present at the event captures materially more uplift under the burn-to-PLPs path than under the transfer-to-builder path.
+- Why it matters:
+  - This does not by itself prove an exploitable production path, but it confirms the core economic mechanism behind the old “JIT-capturable commission burn” concern.
+  - Future heavier review should focus on how accessible / repeatable this path is in live flows, not on whether the uplift mechanism exists.
+- Related tests:
+  - `PanopticSettlementPoCs.t.sol`
+
+---
+
 ## Open Candidate Concerns
 
-### 11. Structural exercise permissiveness still needs true economic-path validation
+### 13. Structural exercise permissiveness still needs true economic-path validation
 - Status: `Open candidate`
 - Hypothesis:
   - Because `validateIsExercisable` only checks structural long-leg existence, the real safety burden sits on:
@@ -209,7 +243,7 @@
 
 ---
 
-### 12. Premium settlement availability vs theoretical premium still needs integrated proof
+### 14. Premium settlement availability vs theoretical premium still needs integrated proof
 - Status: `Open candidate`
 - Hypothesis:
   - seller-claimable premium may still diverge from truly settled/available premium in some live-flow path, especially around chunk pokes, partial exits, or liquidation haircuts
@@ -230,7 +264,7 @@
 
 ---
 
-### 13. Burn vs force-exercise economic consistency still needs differential validation
+### 15. Burn vs force-exercise economic consistency still needs differential validation
 - Status: `Open candidate`
 - Hypothesis:
   - for the same `tokenId` and same oracle snapshot, force exercise and ordinary burn may fail to reconcile to the same underlying unwind + settlement baseline except for explicit exercise fee
@@ -257,7 +291,7 @@
 
 ---
 
-### 14. Liquidation / forced-action snapshot alignment risk remains the main unresolved high-severity surface
+### 16. Liquidation / forced-action snapshot alignment risk remains the main unresolved high-severity surface
 - Status: `Open candidate`
 - Hypothesis:
   - even if branch routing is correct, value transfer during liquidation or force exercise may still be unfair due to:

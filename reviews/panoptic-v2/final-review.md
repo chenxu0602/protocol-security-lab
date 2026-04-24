@@ -6,7 +6,8 @@ The current review suggests that Panoptic’s strongest residual risk is not bra
 
 The review so far suggests a clear split:
 - many high-level branch-selection, initialization, and binding hypotheses can be killed with offline semantic testing
-- the strongest surviving concerns sit in integrated premium settlement, force-exercise, and liquidation snapshot alignment risk against live AMM state
+- many historically reported RiskEngine / OraclePack arithmetic and packing issues now behave like mitigation-confirmation regressions on current code
+- the strongest surviving concerns sit in integrated premium settlement, force-exercise, burn-based fee distribution, and liquidation snapshot alignment risk against live AMM state
 
 ## Scope And Method
 This review phase focused on:
@@ -76,6 +77,20 @@ The tested view is intentionally toggle-sensitive:
 
 This kills the idea that a single scalar “premium owed” view is enough for review or integration reasoning.
 
+### 7. Several historically sharp RiskEngine / OraclePack bug classes remain live issue candidates on current code
+The new grouped PoCs did not support this.
+
+Current offline regression coverage now shows that the present branch has already addressed a number of historically high-signal issue classes:
+- `getLiquidationBonus` no longer underflows on the tested distribution-insolvent shape
+- multi-leg credit accounting now accumulates rather than overwriting
+- `twapEMA` now weights fast / slow / eons and ignores spot
+- width-1 long-at-strike no longer divides by zero
+- `rebaseOraclePack()` preserves EMAs and lock mode
+- same-epoch `rateAtTarget` update no longer compounds in the tested shape
+- `safeMode > 0` forces the 4-tick path on the symmetric solvency blind-spot shape
+
+That does not prove the full RiskEngine surface is exhausted, but it does mean these specific old bug families should now be treated primarily as regression coverage, not as first-line surviving findings.
+
 ## Surviving Concerns
 
 ### 1. Force exercise remains structurally permissive but economically unresolved
@@ -98,7 +113,15 @@ The unresolved part is not the existence of toggles. It is whether live settleme
 - burn/settle sequencing
 - liquidation haircuts
 
-### 3. Liquidation / forced-action snapshot alignment risk is still the main unresolved high-severity surface
+### 3. Burn-based commission distribution remains economically sensitive to who is present at the event
+The new settlement PoCs confirm the core mechanism behind the old JIT-capture concern:
+- when `feeRecipient == 0`, commission is burned from the option owner instead of transferred away
+- that reduces `totalSupply` without removing assets
+- a dominant entrant present at the burn event captures more uplift than in the transfer-to-builder control path
+
+This is still not the same thing as a full exploit proof, because live extractability depends on how reachable and repeatable that path is in production flows. But the underlying economic effect is real enough that it should stay on the surviving-concern side of the ledger.
+
+### 4. Liquidation / forced-action snapshot alignment risk is still the main unresolved high-severity surface
 The strongest remaining uncertainty is not branch selection or initialization, but integrated value transfer across premium settlement, forced actions, and liquidation under real AMM state.
 
 Current code reading plus offline sequencing tests point to a sensitive ordering:
@@ -110,7 +133,7 @@ Current code reading plus offline sequencing tests point to a sensitive ordering
 
 That sequencing is coherent enough to model offline, but it remains the place where a real economic mismatch could survive despite all the branch-level tests passing.
 
-### 4. Same insolvency premise can still fork into different outcomes under different snapshots
+### 5. Same insolvency premise can still fork into different outcomes under different snapshots
 A major surviving concern is whether the same economic position can produce materially different liquidation outcomes because:
 - eligibility snapshot
 - burn settlement snapshot
@@ -137,14 +160,18 @@ This is exactly the sort of issue that offline state-machine correctness will no
 - `PanopticFactoryBindings.t.sol`
 - `PanopticLiquidationSemantics.t.sol`
 - `PanopticPremiumExerciseSemantics.t.sol`
+- `PanopticRiskEnginePoCs.t.sol`
+- `PanopticSettlementPoCs.t.sol`
+- `PanopticTokenOracleEdgePoCs.t.sol`
 - `PanopticTokenIdSemantics.t.sol`
 
 ### Current Offline Result
 - `FOUNDRY_OFFLINE=true forge test --offline --match-path 'test/Panoptic*.t.sol'`
-- `98 passed, 0 failed`
+- `113 passed, 0 failed`
 
 ## Next Review Direction
 - continue deepening `PanopticPremiumExerciseSemantics.t.sol` around burn-vs-exercise differential and available-vs-theoretical premium views
 - keep `PanopticLiquidationSemantics.t.sol` focused on eligibility snapshot, settlement snapshot, bonus/haircut ordering, and final collateral reconciliation
+- keep `PanopticSettlementPoCs.t.sol` focused on paths where burn-based fee distribution can become economically path-dependent on vault presence / timing
 - move surviving concerns toward heavier integration or fork-capable tests once the offline semantics are saturated
 - further offline effort on branch-table semantics, basic initialization, or simple structural exercisability is unlikely to produce high-value findings relative to premium/liquidation integration work
