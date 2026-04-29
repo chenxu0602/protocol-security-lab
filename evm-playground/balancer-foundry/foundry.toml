@@ -1,0 +1,53 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["lib"]
+out = "out"
+cache_path = "cache"
+optimizer = true
+optimizer_runs = 9999
+solc_version = "0.7.1"
+allow_paths = [
+    "../balancer"
+]
+fs_permissions = [
+    { access = "read", path = "out" },
+    { access = "read-write", path = "cache" }
+]
+ignored_error_codes = [8261]
+
+remappings = [
+    "forge-std/=lib/forge-std/src/",
+    "@forge-std/=lib/forge-std/src/",
+    "@balancer-labs/v2-interfaces/=lib/balancer-v2-monorepo/pkg/interfaces/",
+    "@balancer-labs/v2-vault/=lib/balancer-v2-monorepo/pkg/vault/",
+    "@balancer-labs/v2-pool-weighted/=lib/balancer-v2-monorepo/pkg/pool-weighted/",
+    "@balancer-labs/v2-pool-utils/=lib/balancer-v2-monorepo/pkg/pool-utils/",
+    "@balancer-labs/v2-solidity-utils/=lib/balancer-v2-monorepo/pkg/solidity-utils/",
+    "@balancer-labs/v2-pool-stable/=lib/balancer-v2-monorepo/pkg/pool-stable/",
+    "@balancer-labs/v2-liquidity-mining/=lib/balancer-v2-monorepo/pkg/liquidity-mining/",
+    "@balancer-labs/v2-standalone-utils/=lib/balancer-v2-monorepo/pkg/standalone-utils/",
+    "balancer-v2-monorepo/=lib/balancer-v2-monorepo/",
+    "lib/forge-std/src/=lib/forge-std/src/"
+]
+
+[fmt]
+bracket_spacing = true
+tab_width = 4
+line_length = 100
+int_types = "preserve"
+quote_style = "single"
+wrap_comments = true
+
+[profile.ci]
+offline = true
+verbosity = 2
+
+[fuzz]
+runs = 256
+max_test_rejects = 60000
+
+[profile.intense.fuzz]
+verbosity = 3
+runs = 100000
+max_test_rejects = 600000
