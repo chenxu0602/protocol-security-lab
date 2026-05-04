@@ -1,0 +1,436 @@
+# Threat Model
+
+## Protocol Summary
+rg (Reserve Governor) is a hybrid optimistic/pessimistic governance + staking incentive subsystem for Reserve. It routes both “fast/optimistic” and “slow/pessimistic” proposals through a single Timelock while using (a) a proposer throttle to rate-limit optimistic proposal creation and (b) staked-voting / guardian-style checks to block or slow proposals. Separately, a StakingVault and RewardTokenRegistry manage staking of an underlying token and distribution/registration of reward tokens. The primary economic risks are not lending/liquidation, but (1) governance-controlled value movement via timelock execution, (2) proposal lifecycle correctness (queue/cancel/execute) under optimistic assumptions, (3) throttle correctness as DoS/anti-spam control, and (4) staking share/reward accounting correctness (no inflation, no reward-drain, no stuck funds).
+
+## Actors
+- Timelock
+  - single execution funnel for all proposals (optimistic and pessimistic) that can call arbitrary target contracts after delay
+  - trust level: trusted
+- Governance (tokenholders / voters)
+  - authorizes/defeats proposals; may update risk params/roles for governor, vault, registries
+  - trust level: partially_trusted
+- Proposer
+  - creates proposals; can spam/DoS, craft calldata, and attempt to bypass throttle/guardian pathways
+  - trust level: untrusted
+- Guardian / Veto actor
+  - blocks/cancels optimistic proposals, escalates to pessimistic path, or enforces safety brakes
+  - trust level: trusted
+- Staker
+  - stakes underlying into StakingVault to earn rewards and/or governance power
+  - trust level: untrusted
+- Reward distributor / notifier
+  - funds rewards, registers reward tokens, triggers reward period updates (if supported)
+  - trust level: partially_trusted
+- MEV searcher / executor
+  - front-runs proposal creation/execution and reward claims to capture value
+  - trust level: untrusted
+- Governance
+  - privileged governance or operational role
+  - trust level: trusted
+- Supplier
+  - supplies assets and receives protocol claims
+  - trust level: untrusted
+- Borrower
+  - opens debt against collateral
+  - trust level: untrusted
+- Repayer
+  - reduces debt using underlying or protocol claims
+  - trust level: untrusted
+- Liquidator
+  - settles unhealthy positions against configured discounts or bonuses
+  - trust level: untrusted
+- Depositor
+  - deposits assets and receives share-like claims
+  - trust level: untrusted
+- Redeemer
+  - withdraws value through share burn or redemption paths
+  - trust level: untrusted
+
+## Trust Assumptions
+- Timelock admin/ownership is correctly set to the intended governance and cannot be seized via initialization/deployer mistakes.
+- Governor’s optimistic path safety relies on at least one honest/available guardian/veto path (or equivalent safety module) during the fast window; otherwise optimistic proposals can pass unchallenged.
+- StakingVault assumes ERC20 underlying/reward tokens are non-malicious enough for the used transfer pattern (no reentrancy surprises, fee-on-transfer handling if not supported, no rebasing unless explicitly supported).
+- All deployers/registries are initialized exactly once and bind to correct implementations; no uninitialized proxy/implementation can be taken over.
+- Time assumptions (block.timestamp) are acceptable for throttle windows, voting delays, timelock delays; miners can skew timestamps within tolerated bounds.
+- Supported ERC20-like assets preserve expected transfer and balance semantics.
+- Privileged roles are trusted to set economically coherent parameters without bypassing core accounting invariants.
+- All security-critical value transfers rely on transaction-level atomicity rather than trusted external behavior.
+
+## External Trust Boundaries
+- ERC20 underlying token
+  - Deposit/withdraw and share accounting can be broken by fee-on-transfer, rebasing, ERC777 hooks, non-standard return values, or balance manipulation.
+  - related components: StakingVault, StakingVault.t
+- ERC20 reward tokens
+  - Reward distribution/claim paths can be griefed or drained if reward token transfer semantics differ from assumptions; registry may be abused to add malicious tokens.
+  - related components: RewardTokenRegistry, StakingVault, RewardTokenRegistryDeployer
+- Timelock-controlled target contracts (external)
+  - Governor can execute arbitrary calls on external targets; the safety of the system depends on correct timelock gating, proposal encoding, and access control on targets.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+- RoleRegistry / access-control module (if externalized)
+  - RewardTokenRegistry indicates a roleRegistry dependency; misconfiguration can allow unauthorized reward token registration or admin actions.
+  - related components: RewardTokenRegistry, StakingVault.t
+- erc20
+  - Non-standard token behavior can violate transfer, balance, or accounting assumptions.
+  - related components: ReserveOptimisticGovernor.t, StakingVault, StakingVault.t
+
+## Assets / Security Properties to Protect
+- Single-source-of-truth execution gating
+  - No proposal action should execute unless it passed the intended governance path and timelock delay; otherwise governance capture is trivial.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernorDeployer, ReserveOptimisticGovernor.t
+- Optimistic proposal safety window integrity
+  - Fast proposals must be cancelable/vetoable/escalatable during the optimistic window; otherwise throttle is the only defense against fast hostile actions.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+- Proposer throttle correctness and non-bypassability
+  - Throttle is an economic security control against proposal-spam/DoS and fast-path takeover; bypass lets attacker overwhelm guardians or fill timelock queues.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernorDeployer
+- Proposal identity & calldata integrity
+  - Hashing/ID computation must uniquely bind targets/values/calldata/salt to avoid executing different actions than voted/expected.
+  - related components: ReserveOptimisticGovernor
+- Staking share-to-asset coherence
+  - Total underlying held must reconcile with total shares (or equivalent stake accounting) to prevent inflationary withdrawals or stuck funds.
+  - related components: StakingVault, StakingVault.t
+- Reward accrual conservation
+  - Rewards distributed must equal rewards funded minus rewards claimed (modulo rounding); no double-claim or cross-token bleed.
+  - related components: StakingVault, RewardTokenRegistry
+- Registry authorization safety
+  - Only authorized actors can add/remove reward tokens; otherwise malicious reward tokens can brick claims or trigger reentrancy.
+  - related components: RewardTokenRegistry, RewardTokenRegistryDeployer
+- reserve-to-claim reconciliation
+  - If reserve accounting drifts from user-facing claims, the protocol can silently create or destroy value.
+- valuation-to-liquidation coherence
+  - If solvency inputs diverge, borrowers can be liquidated incorrectly or remain unliquidated while insolvent.
+- accrual-to-treasury separation
+  - Fee leakage or double counting directly distorts user value and protocol-owned revenue.
+- solvency correctness
+  - Healthy positions must remain non-liquidatable and unhealthy positions must settle with value-coherent debt reduction and collateral seizure.
+  - related components: solvency, liquidation
+- reserve accounting consistency
+  - Reserve-level state must reconcile with tokenized claims, debt growth, and treasury extraction.
+  - related components: reserve accounting, tokenization
+- share-to-asset coherence
+  - Share issuance and redemption must preserve fair claim semantics under the current managed-asset state.
+  - related components: shares, vault accounting
+
+## Top Review Themes
+- Liquidation failure surface
+  - priority: critical
+  - Economic invariants can break while executing liquidation.
+- Optimistic safety model: veto/cancel/escalation and throttle as economic DoS control
+  - priority: critical
+  - Fast proposals are only safe if challengers can reliably stop them and proposers cannot spam faster than defenses; subtle timestamp/window bugs become governance-capture vectors.
+  - related components: ReserveOptimisticGovernor
+  - related anchors: A3 Throttle window invariants, A4 Cancel/Veto finality
+- Reserve and tokenized accounting desync
+  - priority: critical
+  - User balances, reserve balances, or treasury accrual diverge economically.
+  - related components: reserve accounting, tokenization, treasury
+- Solvency valuation drift
+  - priority: critical
+  - Healthy positions become liquidatable too early, or unhealthy positions remain under-liquidated.
+  - related components: solvency, oracle, liquidation
+- Timelock execution correctness across dual proposal paths (optimistic vs pessimistic)
+  - priority: critical
+  - All value movement ultimately funnels through the timelock; any mismatch between proposal lifecycle state and timelock queue/execute permits unauthorized execution or permanent DoS.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t, ReserveOptimisticGovernorDeployer
+  - related anchors: A1 Proposal→Timelock bijection, A2 Unique proposal identity
+- User solvency
+  - priority: critical
+  - If this relationship breaks, the protocol can misprice value, misattribute claims, or settle value transfers incoherently.
+  - related components: ReserveOptimisticGovernanceVersionRegistryDeployer, ReserveOptimisticGovernorDeployer, ReserveOptimisticGovernorDeployerDeployer, RewardTokenRegistryDeployer
+  - related anchors: User solvency
+
+## Economic Primitives
+- proposal power / governance authority
+  - kind: control_state
+  - The effective ability to schedule and execute privileged actions via ReserveOptimisticGovernor + Timelock (includes voting outcomes, guardian veto power, and delays).
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+- timelock operation queue
+  - kind: queued_state
+  - Set of queued operations (targets/values/calldata/salts/eta) awaiting execution; represents latent ability to move value/change params.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+- optimistic proposal quota (throttle capacity)
+  - kind: rate_limit_state
+  - Per-proposer capacity within a time window for creating fast proposals; economic anti-spam resource.
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernorDeployer
+- staked underlying balance
+  - kind: pool_state
+  - Underlying tokens custody inside StakingVault backing user shares/stakes.
+  - related components: StakingVault, StakingVault.t
+- staking shares / stake positions
+  - kind: user_claim
+  - User accounting units representing claim on vault underlying and/or eligibility for rewards/governance weight.
+  - related components: StakingVault
+- reward emission inventory
+  - kind: incentive_state
+  - Funded reward tokens held by vault (or streamed) to be allocated over time to stakers.
+  - related components: StakingVault, RewardTokenRegistry
+- reward entitlement indexes
+  - kind: index_state
+  - Per-reward-token global index and per-user checkpoints used to compute claimable rewards without iterating all users.
+  - related components: StakingVault
+- reward token allowlist (registry set)
+  - kind: config_state
+  - Set of reward tokens approved/registered for distribution/claim within the system.
+  - related components: RewardTokenRegistry
+- reserve liquidity
+  - kind: pool_state
+  - Underlying reserve-side liquidity and utilization that backs supplier claims and borrower debt.
+  - related components: ReserveOptimisticGovernanceVersionRegistryDeployer, ReserveOptimisticGovernorDeployer, ReserveOptimisticGovernorDeployerDeployer, ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+- supplier claims
+  - kind: user_claim
+  - User-facing supplier balances, aToken-style claims, or equivalent reserve share representation.
+- borrower debt
+  - kind: user_debt
+  - Stable or variable debt state that tracks principal and accrued borrowing obligations.
+- solvency state
+  - kind: risk_state
+  - User-level collateral, debt, LTV, and liquidation eligibility under current valuations.
+- treasury accrual
+  - kind: fee_state
+  - Protocol-owned portion of accrued interest or fees extracted from reserve economics.
+
+## Pool-Type Risk Matrix
+- Optimistic (fast) proposal path
+  - Primary ‘speed’ mechanism; intended to allow quick changes under challenge model.
+  - risk: Throttle bypass leading to guardian overwhelm and timelock queue spam
+  - risk: Veto/cancel window miscomputed (timestamp/edge) causing unchallenged hostile execution
+  - risk: Proposal state not properly bound to timelock op id (execute wrong calldata)
+  - risk: Griefing by proposing operations that always revert on execute but block queue capacity
+  - related components: ReserveOptimisticGovernor
+- Pessimistic (slow) proposal path
+  - Backstop governance path with stronger safety assumptions and longer delays.
+  - risk: Mismatched quorum/threshold vs intended security leading to capture
+  - risk: State machine bugs allowing execute without successful vote
+  - risk: Queue/execute replay if op id not consumed correctly
+  - related components: ReserveOptimisticGovernor
+- StakingVault (single underlying, multi-reward)
+  - Holds user funds and distributes rewards; direct loss surface.
+  - risk: Share inflation/rounding leading to free withdrawals
+  - risk: Reward index math allowing double-claim or claim without stake
+  - risk: Reentrancy on deposit/withdraw/claim via token callbacks
+  - risk: Fee-on-transfer / rebasing underlying breaking accounting
+  - related components: StakingVault
+- RewardTokenRegistry (allowlist-controlled rewards)
+  - Controls what reward assets can be distributed/claimed; misconfig enables grief/drain.
+  - risk: Unauthorized registration/removal of reward tokens
+  - risk: Malicious reward token causing claim DoS or reentrancy
+  - risk: Registry/vault disagreement about enabled reward set
+  - related components: RewardTokenRegistry
+- Deployer / VersionRegistry artifact layer
+  - Determines initial admin/implementation wiring; errors are permanent and catastrophic.
+  - risk: Wrong init args (admin, timelock, guardian) => governance capture
+  - risk: Create2 salt collisions / address predictability causing predeployment grief
+  - risk: Deploying unverified/incorrect libs for proposal/throttle
+  - related components: ReserveOptimisticGovernanceVersionRegistryDeployer, ReserveOptimisticGovernorDeployerDeployer, ReserveOptimisticGovernorDeployer, StakingVaultDeployer, RewardTokenRegistryDeployer
+
+## Critical State Transitions
+- propose (optimistic/fast)
+  - category: governance_intent
+  - Create a fast proposal and bind it to expected targets/values/calldata and an optimistic challenge window; consumes proposer throttle capacity.
+  - entrypoints: ReserveOptimisticGovernor.propose(...) (name inferred)
+  - affected primitives: proposal power / governance authority, optimistic proposal quota (throttle capacity), timelock operation queue
+- propose (pessimistic/slow)
+  - category: governance_intent
+  - Create a standard (non-optimistic) proposal that proceeds through voting and timelock delay.
+  - entrypoints: ReserveOptimisticGovernor.propose(...) / proposePessimistic(...) (name inferred)
+  - affected primitives: proposal power / governance authority, timelock operation queue
+- queue operation in timelock
+  - category: governance_queuing
+  - After passing the required path, enqueue operation(s) into Timelock; should be one-to-one with proposal action bundle and eta.
+  - entrypoints: ReserveOptimisticGovernor.queue(...) (name inferred)
+  - affected primitives: timelock operation queue, proposal power / governance authority
+- cancel/veto/escalate optimistic proposal
+  - category: governance_safety
+  - Guardian or authorized actor cancels a fast proposal or escalates it to slow path; must prevent subsequent queue/execute of the canceled op.
+  - entrypoints: ReserveOptimisticGovernor.cancel(...) / veto(...) / escalate(...) (name inferred)
+  - affected primitives: proposal power / governance authority, timelock operation queue, optimistic proposal quota (throttle capacity)
+- execute timelock operation
+  - category: governance_execution
+  - Execute queued operation(s) after delay; must be replay-protected and must match the proposal-approved calldata bundle.
+  - entrypoints: Timelock.execute(...) (external), ReserveOptimisticGovernor.execute(...) (if wrapper)
+  - affected primitives: timelock operation queue, proposal power / governance authority
+- stake/deposit underlying
+  - category: capital_entry
+  - User deposits underlying into StakingVault; increases total underlying and mints stake shares/position balance.
+  - entrypoints: StakingVault.deposit(...) / stake(...) (name inferred)
+  - affected primitives: staked underlying balance, staking shares / stake positions, reward entitlement indexes
+- withdraw/unstake underlying
+  - category: capital_exit
+  - User burns shares/position to withdraw underlying; must settle rewards/accounting first to prevent index manipulation.
+  - entrypoints: StakingVault.withdraw(...) / unstake(...) (name inferred)
+  - affected primitives: staked underlying balance, staking shares / stake positions, reward entitlement indexes
+- fund/notify reward emissions
+  - category: incentive_funding
+  - Add rewards or start a new reward period for a reward token; updates global reward indexes and emission parameters.
+  - entrypoints: StakingVault.notifyRewardAmount(...) / addRewards(...) (name inferred)
+  - affected primitives: reward emission inventory, reward entitlement indexes, reward token allowlist (registry set)
+- claim rewards
+  - category: incentive_settlement
+  - User claims accumulated rewards; updates user checkpoints and transfers reward tokens out.
+  - entrypoints: StakingVault.getReward(...) / claim(...) (name inferred)
+  - affected primitives: reward emission inventory, reward entitlement indexes
+- register/unregister reward token
+  - category: config_update
+  - Admin/role-gated update to RewardTokenRegistry reward set; changes what tokens vault may distribute.
+  - entrypoints: RewardTokenRegistry.register(...) / unregister(...) (name inferred)
+  - affected primitives: reward token allowlist (registry set)
+- supply
+  - category: capital_entry
+  - Adds user capital to the reserve and mints supplier-side claims under the current reserve index state.
+  - affected primitives: reserve liquidity, supplier claims, solvency state
+- withdraw
+  - category: capital_exit
+  - Removes user capital, burns supplier claims, and revalidates solvency under the remaining collateral set.
+  - affected primitives: reserve liquidity, supplier claims, solvency state
+- borrow and repay
+  - category: debt_lifecycle
+  - Opens and closes debt while mutating reserve-side accounting, borrower-side debt, and valuation-dependent solvency.
+  - affected primitives: reserve liquidity, borrower debt, solvency state, treasury accrual
+- liquidation
+  - category: risk_settlement
+  - Exchanges borrower debt reduction for collateral seizure under current oracle and configuration semantics.
+  - affected primitives: borrower debt, supplier claims, solvency state, treasury accrual
+- flash liquidity
+  - category: transient_liquidity
+  - Temporarily exports reserve liquidity and relies on atomic repayment or explicitly sanctioned debt opening.
+  - affected primitives: reserve liquidity, treasury accrual
+- parameter updates
+  - category: privileged_control
+  - Privileged updates change risk limits, fees, caps, or other economic rules that govern ongoing user positions.
+  - affected primitives: solvency state, treasury accrual, reserve liquidity
+
+## Accounting Anchors
+- For each proposal action bundle, there exists exactly one corresponding timelock operation id (hash) that is queued iff the proposal reaches the queue state, and executed iff the proposal reaches the executed state; cancel/veto irrevocably prevents later queue/execute.
+  - why it matters: Breaks allow executing unapproved calldata, replaying operations, or executing after cancellation.
+  - priority: critical
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+- Proposal ids/hashes uniquely and immutably bind (targets, values, calldata, description/salt, proposer, chainId if needed) so that different proposals cannot collide into the same id and the same id cannot map to different payloads across time.
+  - why it matters: Collisions enable execute-of-different-action and governance confusion attacks.
+  - priority: critical
+  - related components: ReserveOptimisticGovernor
+- If an optimistic proposal is vetoed/canceled/escalated, it cannot later be queued/executed on the fast path, even if previously queued; state transitions are monotonic and precedence rules are explicit.
+  - why it matters: Race conditions between queue/cancel/execute can lead to hostile execution despite a successful challenge.
+  - priority: critical
+  - related components: ReserveOptimisticGovernor
+- At all times: underlyingBalance(vault) + accountedInvestments(if any) ≥ totalShares * sharePrice, and deposit/withdraw update shares and underlying consistently (no user can withdraw more underlying than their fair share given rounding rules).
+  - why it matters: Violations create direct insolvency or free-withdraw inflation.
+  - priority: critical
+  - related components: StakingVault, StakingVault.t
+- user solvency and liquidation eligibility must remain valuation-coherent
+  - why it matters: If this relationship breaks, the protocol can misprice value, misattribute claims, or settle value transfers incoherently.
+  - priority: critical
+  - related components: ReserveOptimisticGovernanceVersionRegistryDeployer, ReserveOptimisticGovernorDeployer, ReserveOptimisticGovernorDeployerDeployer, RewardTokenRegistryDeployer
+- Collateral valuation, debt valuation, and liquidation eligibility must be derived from mutually coherent risk inputs.
+  - why it matters: If solvency inputs diverge, borrowers can be liquidated incorrectly or remain unliquidated while insolvent.
+  - priority: critical
+- Per-proposer optimistic proposal count within the configured window never exceeds the limit; window rollover and timestamp edge cases (boundary seconds) cannot be exploited to exceed limits or permanently lock proposers out.
+  - why it matters: Throttle is an economic security control; bypass leads to spam/DoS and practical governance capture during the fast window.
+  - priority: high
+  - related components: ReserveOptimisticGovernor, ReserveOptimisticGovernorDeployer
+- For each reward token r: rewardsFunded_r − rewardsClaimed_r − rewardsRecovered_r == vaultRewardBalance_r (modulo rounding), and userClaimable never exceeds unallocated+allocated inventory.
+  - why it matters: Prevents reward-drain/double-claim and detects silent accounting drift.
+  - priority: high
+  - related components: StakingVault, RewardTokenRegistry
+
+## Main Review Surfaces
+- ReserveOptimisticGovernor proposal state machine (fast/slow paths, hashing, queue/cancel/execute)
+- Throttle library semantics (per-account windows, resets, boundary conditions)
+- Timelock operation id computation and replay protection
+- Guardian/veto/escalation authorization and race conditions
+- StakingVault: deposit/withdraw share math, reward index math, claim paths
+- RewardTokenRegistry: roleRegistry gating, allowlist semantics, interaction with vault
+- Deployer artifacts: initialization args, create2 salts, ownership wiring, library addresses
+- ERC20 interaction patterns: safeTransfer handling, fee-on-transfer/rebasing non-support, reentrancy guards
+
+## Main Threat Surfaces
+- Initialization/ownership misbinding in deployers
+  - priority: critical
+  - mechanism: Artifact deployers set admin/roleRegistry/timelock/governor wiring at deploy time.
+  - failure mode: Deployer leaves contracts uninitialized or sets wrong owner; attacker initializes first or retains upgrade/owner rights; wrong library address changes proposal/throttle logic.
+  - affected components: ReserveOptimisticGovernanceVersionRegistryDeployer, ReserveOptimisticGovernorDeployerDeployer, ReserveOptimisticGovernorDeployer, RewardTokenRegistryDeployer, StakingVaultDeployer
+- Liquidation failure surface
+  - priority: critical
+  - mechanism: Exchanges borrower debt reduction for collateral seizure under current oracle and configuration semantics.
+  - failure mode: Economic invariants can break while executing liquidation.
+- Optimistic-path governance capture via challenge-window bug
+  - priority: critical
+  - mechanism: Fast proposals rely on time windows and veto/escalation flows to remain safe.
+  - failure mode: Off-by-one timestamp logic, missing checks, or wrong precedence allows executing before challenge window ends or after veto.
+  - affected components: ReserveOptimisticGovernor
+- Reserve and tokenized accounting desync
+  - priority: critical
+  - mechanism: Reserve-level state evolves separately from user-facing claim or debt state.
+  - failure mode: User balances, reserve balances, or treasury accrual diverge economically.
+  - affected components: reserve accounting, tokenization, treasury
+- Reward index manipulation / double-claim
+  - priority: critical
+  - mechanism: Reward distribution uses cumulative indexes and per-user checkpoints.
+  - failure mode: Checkpoint not updated on stake changes, allowing claim twice; global index updated after transfers enabling reentrancy; incorrect scaling/precision overflow causing large claims.
+  - affected components: StakingVault
+- Solvency valuation drift
+  - priority: critical
+  - mechanism: Collateral, debt, or oracle valuation feeds into borrowability and liquidation eligibility.
+  - failure mode: Healthy positions become liquidatable too early, or unhealthy positions remain under-liquidated.
+  - affected components: solvency, oracle, liquidation
+- StakingVault share inflation / rounding extraction
+  - priority: critical
+  - mechanism: Deposit/withdraw mints/burns shares vs underlying balance.
+  - failure mode: Rounding favors attacker in repeated small deposits/withdrawals; donate-then-withdraw manipulation if share price uses raw balance; fee-on-transfer breaks expected received amounts.
+  - affected components: StakingVault
+- Timelock operation replay / wrong-op execution
+  - priority: critical
+  - mechanism: Governor queues operations into Timelock and later triggers execution based on proposal state.
+  - failure mode: Operation id not uniquely bound to proposal payload; execute can be called on a different payload, or same payload executed multiple times, or executed after cancel/veto.
+  - affected components: ReserveOptimisticGovernor, ReserveOptimisticGovernor.t
+
+## High-Value Review Questions
+- Are deposit/withdraw/claim functions reentrancy-protected, especially around external token transfers and reward token callbacks? Can reentrancy change user stake before checkpoint updates to overclaim rewards?
+  - priority: critical
+  - related components: StakingVault, RewardTokenRegistry
+  - related anchors: A6 Rewards conservation per token, A7 Reward index monotonicity and checkpoint correctness
+- Are there any code paths where a non-guardian can cancel/veto/escalate, or where guardian privilege can be bypassed via timelock execution ordering (e.g., proposal changes guardian then executes within same batch)?
+  - priority: critical
+  - related components: ReserveOptimisticGovernor
+  - related anchors: A4 Cancel/Veto finality and precedence
+- Can any state transition break the anchor: Collateral valuation, debt valuation, and liquidation eligibility must be derived from mutually coherent risk inputs.?
+  - priority: critical
+  - related anchors: Valuation-to-liquidation coherence
+- Can any state transition break the anchor: reserve accounting must reconcile with tokenized supplier and debt claims?
+  - priority: critical
+  - related components: ReserveOptimisticGovernanceVersionRegistryDeployer, ReserveOptimisticGovernorDeployer, ReserveOptimisticGovernorDeployerDeployer, RewardTokenRegistryDeployer
+  - related anchors: Reserve accounting
+- Can any state transition break the anchor: Reserve-side liquidity and index state must reconcile with supplier claims and borrower debt after every state transition.?
+  - priority: critical
+  - related anchors: Reserve-to-claim reconciliation
+- Can any state transition break the anchor: Treasury accrual must be carved out of reserve economics without double counting against supplier or borrower state.?
+  - priority: critical
+  - related anchors: Accrual-to-treasury separation
+- Do deployer artifacts leave any contract uninitialized or with temporary admin privileges? Verify that ownership/roles are transferred atomically and that create2 salts cannot be reused to deploy a malicious lookalike at an expected address.
+  - priority: critical
+  - related components: ReserveOptimisticGovernorDeployerDeployer, ReserveOptimisticGovernanceVersionRegistryDeployer, StakingVaultDeployer, RewardTokenRegistryDeployer
+  - related anchors: A7 Initialization/upgrade authority
+- During borrow and repay, which accounting relation can break first and what external inputs or privilege changes would trigger it?
+  - priority: critical
+  - related anchors: Reserve-to-claim reconciliation, Valuation-to-liquidation coherence, Accrual-to-treasury separation
+
+## Repo Context
+- analyzer: evm
+- source repo shape: foundry
+- preferred audit workspace shape: foundry
+- runtime: evm
+- language: solidity
+- frameworks: foundry
+- primary docs:
+  - README.md
+- primary code surfaces:
+  - contracts/artifacts/ReserveOptimisticGovernanceVersionRegistryDeployer.sol
+  - contracts/artifacts/ReserveOptimisticGovernorDeployer.sol
+  - contracts/artifacts/ReserveOptimisticGovernorDeployerDeployer.sol
+  - contracts/artifacts/RewardTokenRegistryDeployer.sol
+  - contracts/artifacts/StakingVaultDeployer.sol
+  - contracts/governance/ReserveOptimisticGovernor.sol
+  - contracts/staking/RewardTokenRegistry.sol
+  - contracts/staking/StakingVault.sol
+  - test/ReserveOptimisticGovernor.t.sol
+  - test/StakingVault.t.sol
