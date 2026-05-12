@@ -26,6 +26,12 @@ I offer focused DeFi mechanism risk reviews for early-stage protocols, with emph
 
 - [DeFi Mechanism Risk Snapshot](./services/defi-mechanism-risk-snapshot.md)
 
+## Sample Snapshots
+
+Public examples of the mechanism-risk review format:
+
+- [ERC4626 Donation / Inflation Risk Snapshot](./sample-snapshots/erc4626-donation-inflation-risk-snapshot.md)
+
 ---
 
 ## Research Focus
