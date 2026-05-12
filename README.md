@@ -20,6 +20,14 @@ The goal of this repository is to build a focused body of public work around rev
 
 ---
 
+## Services
+
+I offer focused DeFi mechanism risk reviews for early-stage protocols, with emphasis on oracle, liquidation, LP/vault accounting, margin, and reward-accrual risks.
+
+- [DeFi Mechanism Risk Snapshot](./services/defi-mechanism-risk-snapshot.md)
+
+---
+
 ## Research Focus
 
 I am particularly interested in:
